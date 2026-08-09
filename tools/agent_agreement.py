@@ -115,6 +115,8 @@ def write_template(path: Path) -> None:
             "inspect_captured_graphql_schema",
             "inspect_captured_session_shape",
             "compare_captured_graphql_shapes",
+            "extract_captured_recommendation_batches",
+            "analyze_captured_projection_equivalence",
         ],
         "forbidden_actions": [
             "replay_authenticated_requests",
