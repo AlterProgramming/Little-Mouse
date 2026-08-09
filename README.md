@@ -94,3 +94,15 @@ python tools/extract_har_relational_fabric.py capture.har \
 ```
 
 The default output is pseudonymized. Co-engagement means shared captured media, not synchronized viewing or proof of common recommendation delivery. See [`docs/workflows/har-relational-fabric-recovery.md`](docs/workflows/har-relational-fabric-recovery.md).
+
+### HAR world-fabric recovery
+
+Preserve a wider **centerless world model** across people, media, comments, locations, and captured UI surfaces. The current adapter combines comment activity, liked-media activity, explicit blocked-account state, and accounts surfaced in the Close Friends selector without confusing selection-surface presence with actual membership.
+
+```bash
+python tools/extract_har_world_fabric.py capture.har \
+  --require-fabric \
+  -o world.json
+```
+
+On the supplied validation capture this expands the pseudonymized fabric from 81 nodes / 145 edges to **382 nodes / 522 typed edges**. See [`docs/workflows/har-world-fabric-recovery.md`](docs/workflows/har-world-fabric-recovery.md).
