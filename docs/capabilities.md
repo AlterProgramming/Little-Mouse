@@ -20,6 +20,8 @@ A workflow can become sophisticated without changing the top-level capability mo
 
 **Capability is not permission.** When a derived use performs consequential sensing or identification, it must operate under the project rules in the README and, when required, an [agent-owned agreement](agent-owned-agreement.md).
 
+The machine-readable inventory of currently registered derived workflows is [`../capabilities/registry.json`](../capabilities/registry.json).
+
 ## Negative-space expansion rule
 
 Little Mouse grows primarily by reducing the **negative space between the two top-level capabilities and concrete reproducible workflows**.
@@ -40,9 +42,26 @@ Current browser-capture negative-space coverage includes:
 - GraphQL persisted-query and runtime-schema recovery;
 - GraphQL capture support across `/graphql/query` and `/api/graphql`;
 - value-blind HAR session/authentication-state inventory;
-- before/after GraphQL response-shape differential analysis.
+- before/after GraphQL response-shape differential analysis;
+- recommendation-batch extraction with pseudonymous candidates by default;
+- response-projection equivalence analysis using hashed target selectors.
 
-Adjacent negative space that may be registered later includes recommendation-batch extraction, response-projection equivalence analysis, browser-state/Relay-store inspection, and controlled live replay under an explicitly authorized execution boundary.
+The next adjacent negative space is intentionally smaller now:
+
+- browser-state / Relay-store inspection of data already delivered to the local page;
+- controlled live replay, but only under a separately authorized execution boundary with request/target confinement and audit receipts.
+
+## Evidence classes
+
+Derived browser-capture workflows should distinguish these evidence classes rather than collapsing them:
+
+- **executed capture evidence** — a request/response actually exists in the HAR;
+- **multi-target executed evidence** — the same operation is observed against multiple target selectors;
+- **declared route/template evidence** — a client route definition exposes a generic request shape without proving execution;
+- **local browser-state evidence** — data exists in Relay/React/browser state but may not correspond one-to-one with a network request;
+- **live execution evidence** — a request is actively sent under current authorization; this is outside the default offline HAR-analysis boundary.
+
+Projection equivalence and recommendation extraction operate only on executed capture evidence. They do not promote route templates or inferred fields into observed response truth.
 
 ## Security-warning routing
 
