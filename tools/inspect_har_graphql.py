@@ -58,9 +58,13 @@ def request_params(entry: dict[str, Any]) -> dict[str, str]:
     return params
 
 
+def endpoint_path(entry: dict[str, Any]) -> str:
+    request = entry.get("request", {}) or {}
+    return urlsplit(str(request.get("url", "") or "")).path
+
+
 def is_graphql_entry(entry: dict[str, Any]) -> bool:
-    url = str((entry.get("request", {}) or {}).get("url", "") or "")
-    path = urlsplit(url).path
+    path = endpoint_path(entry)
     return any(marker in path for marker in GRAPHQL_PATH_MARKERS)
 
 
@@ -167,7 +171,7 @@ def extract_record(
         "entry_index": index,
         "startedDateTime": entry.get("startedDateTime"),
         "method": request.get("method"),
-        "endpoint_path": urlsplit(str(request.get("url", "") or "")).path,
+        "endpoint_path": endpoint_path(entry),
         "friendly_name": params.get("fb_api_req_friendly_name"),
         "doc_id": params.get("doc_id"),
         "variables_schema": variable_schema,
