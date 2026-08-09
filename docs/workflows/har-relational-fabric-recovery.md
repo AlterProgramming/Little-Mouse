@@ -33,14 +33,7 @@ A capture batch is **not a timestamp**. It is evidence that the records were del
 
 ## Inference boundary
 
-The current source records do not expose per-comment creation timestamps. Therefore the extractor explicitly reports:
-
-- `per_comment_timestamps_available: false`
-- `synchronized_viewing_claimed: false`
-- `shared_recommendation_delivery_claimed: false`
-- `algorithmic_causality_claimed: false`
-
-If a future capture contains reliable event timestamps or delivery/ranking observations, a separately validated temporal adapter can add stronger evidence. The base extractor must not silently upgrade co-occurrence into simultaneity or recommendation causality.
+The base relational-fabric extractor intentionally does not turn coarse UI time labels or capture batches into synchronized-viewing claims. The newer [world-fabric workflow](har-world-fabric-recovery.md) can preserve displayed relative-time buckets as additional evidence while still keeping exact timestamps, synchronization, shared recommendation delivery, and algorithmic causality unclaimed.
 
 ## Command
 
@@ -61,24 +54,6 @@ python tools/extract_har_relational_fabric.py capture.har \
 ```
 
 The agreement must explicitly declare `extract_captured_relational_fabric_identities`.
-
-## Real-capture validation
-
-Against the Instagram HAR used to develop the interaction-graph workflow, the captured records support:
-
-- 39 person nodes;
-- 42 media nodes;
-- 81 total nodes;
-- 145 typed edges;
-- 61 unique comment evidence records;
-- 50 unique person -> media comment-incidence edges;
-- 42 person -> media authorship edges;
-- 42 commenter -> post-author interaction edges;
-- 11 commenter <-> commenter co-engagement edges;
-- 5 media objects with at least two distinct captured commenters;
-- 1 weakly connected component containing all 81 nodes.
-
-These counts are derived from the captured relationship records. They do not imply synchronized viewing or common recommendation delivery.
 
 ## Validation criteria
 
