@@ -70,3 +70,15 @@ python tools/diff_har_graphql.py before.har after.har \
 ```
 
 See [`docs/workflows/har-graphql-differential-analysis.md`](docs/workflows/har-graphql-differential-analysis.md).
+
+### HAR interaction-graph recovery
+
+Recover a **directed weighted graph network** from relationship-bearing activity already captured in a HAR. The current extractor maps captured comment-author → post-author interactions and pseudonymizes identities by default. A flat follower/following list does not satisfy the graph acceptance criterion.
+
+```bash
+python tools/extract_har_interaction_graph.py capture.har \
+  --require-network \
+  -o graph.json
+```
+
+See [`docs/workflows/har-interaction-graph-recovery.md`](docs/workflows/har-interaction-graph-recovery.md). Identity-bearing labels are separately gated by an agent-owned agreement.
