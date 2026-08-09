@@ -10,12 +10,21 @@ The workflow reads only data already present in the HAR. It does not replay requ
 
 The output describes **observed runtime shapes**, not the server's authoritative GraphQL type declarations. Optional and union-like shapes are inferred only from values actually present in the capture.
 
+## Supported captured endpoints
+
+Little Mouse recognizes both observed GraphQL transport forms:
+
+- `/graphql/query`
+- `/api/graphql`
+
+The second form is important for modern Meta/Comet captures that submit persisted GraphQL operations directly to `/api/graphql`.
+
 ## Default output
 
-For each captured `/graphql/query` request, the tool reports:
+For each captured GraphQL request, the tool reports:
 
 - HAR entry index and timestamp;
-- request method;
+- request method and endpoint path;
 - `fb_api_req_friendly_name` when present;
 - persisted-query `doc_id` when present;
 - the observed variables schema;
@@ -63,13 +72,13 @@ Create a starter agreement with:
 python tools/agent_agreement.py init agreement.json
 ```
 
-The starter allows schema inspection only. Add `inspect_captured_graphql_values` to `allowed_actions` deliberately if the authorized objective requires captured values, then validate the agreement before use.
+The starter allows schema and session-shape inspection only. Add `inspect_captured_graphql_values` to `allowed_actions` deliberately if the authorized objective requires captured values, then validate the agreement before use.
 
 ## Verification
 
 A valid run should:
 
-- inspect only HAR entries whose request URL contains `/graphql/query`;
+- inspect only HAR entries whose request path contains `/graphql/query` or `/api/graphql`;
 - recover `doc_id` and variables only from captured request parameters;
 - construct response shape only from embedded response JSON;
 - emit no authentication headers or cookies;
