@@ -3,12 +3,15 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from urllib.parse import quote
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 
 import agent_agreement  # noqa: E402
+import analyze_har_projections  # noqa: E402
 import diff_har_graphql  # noqa: E402
+import extract_har_recommendations  # noqa: E402
 import inspect_har_graphql  # noqa: E402
 import inspect_har_session  # noqa: E402
 
@@ -25,26 +28,37 @@ class AgentAgreementTests(unittest.TestCase):
             "inspect_captured_graphql_schema",
             "inspect_captured_session_shape",
             "compare_captured_graphql_shapes",
+            "extract_captured_recommendation_batches",
+            "analyze_captured_projection_equivalence",
         ):
             allowed, reason = agent_agreement.action_status(agreement, action)
             self.assertTrue(allowed)
             self.assertEqual(reason, "action_declared")
 
-    def test_undeclared_value_action_fails_closed(self):
+    def test_value_bearing_actions_fail_closed_by_default(self):
         with tempfile.TemporaryDirectory() as td:
             path = Path(td) / "agreement.json"
             agent_agreement.write_template(path)
             agreement = agent_agreement.load_json(path)
 
-        allowed, reason = agent_agreement.action_status(
-            agreement, "inspect_captured_graphql_values"
-        )
-        self.assertFalse(allowed)
-        self.assertEqual(reason, "action_not_declared")
+        for action in (
+            "inspect_captured_graphql_values",
+            "inspect_captured_recommendation_values",
+        ):
+            allowed, reason = agent_agreement.action_status(agreement, action)
+            self.assertFalse(allowed)
+            self.assertEqual(reason, "action_not_declared")
 
 
 class HarGraphqlTests(unittest.TestCase):
-    def _entry(self, endpoint="/graphql/query", response=None):
+    def _entry(
+        self,
+        endpoint="/graphql/query",
+        response=None,
+        friendly="FollowersDialogQuery",
+        doc_id="999",
+        variables=None,
+    ):
         if response is None:
             response = {
                 "data": {
@@ -56,6 +70,9 @@ class HarGraphqlTests(unittest.TestCase):
                     }
                 }
             }
+        if variables is None:
+            variables = {"id": "123", "first": 12}
+        encoded = quote(json.dumps(variables, separators=(",", ":")))
         return {
             "startedDateTime": "2026-08-09T19:00:00Z",
             "request": {
@@ -68,9 +85,8 @@ class HarGraphqlTests(unittest.TestCase):
                 "postData": {
                     "mimeType": "application/x-www-form-urlencoded",
                     "text": (
-                        "fb_api_req_friendly_name=FollowersDialogQuery&"
-                        "variables=%7B%22id%22%3A%22123%22%2C%22first%22%3A12%7D&"
-                        "doc_id=999"
+                        f"fb_api_req_friendly_name={friendly}&"
+                        f"variables={encoded}&doc_id={doc_id}"
                     ),
                 },
             },
@@ -142,10 +158,11 @@ class HarSessionTests(unittest.TestCase):
 
 class HarGraphqlDiffTests(unittest.TestCase):
     def test_response_shape_diff_is_value_blind(self):
-        before_entry = HarGraphqlTests()._entry(
+        helper = HarGraphqlTests()
+        before_entry = helper._entry(
             endpoint="/api/graphql", response={"data": {"user": {"id": "1"}}}
         )
-        after_entry = HarGraphqlTests()._entry(
+        after_entry = helper._entry(
             endpoint="/api/graphql",
             response={"data": {"user": {"id": "2", "is_private": True}}},
         )
@@ -166,6 +183,77 @@ class HarGraphqlDiffTests(unittest.TestCase):
         dumped = json.dumps(result)
         self.assertNotIn('"1"', dumped)
         self.assertNotIn('"2"', dumped)
+
+
+class HarRecommendationTests(unittest.TestCase):
+    def test_recommendation_batches_are_pseudonymous_by_default(self):
+        response = {
+            "data": {
+                "suggestions": {
+                    "users": [
+                        {
+                            "id": "100",
+                            "username": "alpha",
+                            "social_context": "Followed by someone",
+                            "display_reason": "Suggested for you",
+                        },
+                        {
+                            "id": "200",
+                            "username": "beta",
+                            "display_reason": "Suggested for you",
+                        },
+                    ]
+                }
+            }
+        }
+        entry = HarGraphqlTests()._entry(
+            endpoint="/api/graphql",
+            friendly="SuggestedUsersQuery",
+            doc_id="321",
+            variables={"target_id": "999"},
+            response=response,
+        )
+        result = extract_har_recommendations.inspect_har(
+            {"log": {"entries": [entry]}}, include_values=False
+        )
+        self.assertEqual(result["graphql_entries_with_recommendation_batches"], 1)
+        self.assertFalse(result["values_emitted"])
+        batch = result["records"][0]["batches"][0]
+        self.assertEqual([x["rank"] for x in batch["candidates"]], [1, 2])
+        dumped = json.dumps(result)
+        self.assertNotIn("alpha", dumped)
+        self.assertNotIn("beta", dumped)
+        self.assertNotIn("Followed by someone", dumped)
+        self.assertTrue(batch["candidates"][0]["social_context_present"])
+
+
+class HarProjectionTests(unittest.TestCase):
+    def test_same_target_multiple_operations_form_equivalence_group(self):
+        helper = HarGraphqlTests()
+        rich = helper._entry(
+            endpoint="/api/graphql",
+            friendly="RichProfileQuery",
+            doc_id="111",
+            variables={"id": "14925885783"},
+            response={"data": {"user": {"id": "x", "username": "u", "follower_count": 5}}},
+        )
+        hover = helper._entry(
+            endpoint="/api/graphql",
+            friendly="HoverCardQuery",
+            doc_id="222",
+            variables={"userID": "14925885783"},
+            response={"data": {"user": {"id": "y", "username": "v", "is_private": True}}},
+        )
+        result = analyze_har_projections.inspect_har(
+            {"log": {"entries": [rich, hover]}}
+        )
+        self.assertEqual(result["equivalence_group_count"], 1)
+        group = result["equivalence_groups"][0]
+        self.assertEqual(group["operation_count"], 2)
+        self.assertIn("$.data.user.id", group["common_fields"])
+        self.assertFalse(result["raw_target_values_emitted"])
+        dumped = json.dumps(result)
+        self.assertNotIn("14925885783", dumped)
 
 
 if __name__ == "__main__":
