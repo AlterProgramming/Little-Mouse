@@ -58,6 +58,14 @@ Other captured surfaces can contribute additional evidence without pretending th
 
 A selection UI is itself an observable entity. If an account appears in the Close Friends selector, the capture supports `surface_contains_person`; it does **not** automatically support `close_friend_of`. Likewise, identical coarse relative-time labels on comments are bucket evidence, not synchronized-viewing evidence.
 
+## Preserve temporal semantics before synchronization
+
+A timestamp is useful only if its role is retained. Little Mouse therefore treats browser observation time, server transport time, content creation time, conversation activity, read/seen watermarks, and participant action time as different evidence classes.
+
+A HAR response batch with `startedDateTime` has an exact observation timestamp. If two comment records for the same media are delivered in that entry, Little Mouse may record an exact same-batch `co_observed_at` time. It must not reinterpret that timestamp as the time either participant commented or viewed the media.
+
+Likewise, read-receipt `watermark_timestamp_ms` and story `seen` / `reel_media_seen_timestamp` are temporal coordinates, but the temporal adapter treats them as watermark-position times rather than wall-clock read/watch actions. Only explicit participant action-time fields can enter a later synchronized-viewing analysis.
+
 Current browser-capture negative-space coverage includes:
 
 - HAR media/body reconstruction;
@@ -67,13 +75,16 @@ Current browser-capture negative-space coverage includes:
 - before/after GraphQL response-shape differential analysis;
 - pseudonymized interaction-graph reconstruction from captured relationship evidence;
 - post-mediated heterogeneous relational-fabric reconstruction;
-- wider world-fabric reconstruction across people, media, comments, locations, and UI surfaces.
+- wider world-fabric reconstruction across people, media, comments, locations, and UI surfaces;
+- typed temporal-evidence recovery with exact same-response co-observation timestamps and explicit watermark/event semantics.
 
 Graph reconstruction has a stronger acceptance boundary than list extraction: a flat follower/following array is not considered a graph-network result. The workflow must produce typed edges from relationship evidence present in the capture.
 
 The current world-fabric validation expands the same supplied capture from 81 nodes / 145 edges to **382 nodes / 522 edges** while keeping identities pseudonymized by default.
 
-Adjacent negative space that may be registered later includes stronger reply/thread edges, explicit tagged-account edges, recommendation-delivery observations, reliable event-time adapters, response-projection equivalence analysis, browser-state/Relay-store inspection, additional relationship-edge adapters, and controlled live replay under an explicitly authorized execution boundary.
+The remaining temporal negative space is narrower: exact **participant event timestamps** joined to the relevant shared media/comment/view relationship. Current activity-center comment records still provide coarse display labels, and current read/story timestamp fields are watermarks rather than direct action times. Synchronization must remain unclaimed until compatible direct event semantics are captured.
+
+Other adjacent negative space includes stronger reply/thread edges, explicit tagged-account edges, recommendation-delivery observations, response-projection equivalence analysis, browser-state/Relay-store inspection, additional relationship-edge adapters, and controlled live replay under an explicitly authorized execution boundary.
 
 ## Security-warning routing
 
