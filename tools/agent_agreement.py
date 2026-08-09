@@ -111,7 +111,11 @@ def write_template(path: Path) -> None:
             "system, or capture."
         ),
         "inputs": ["capture.har"],
-        "allowed_actions": ["inspect_captured_graphql_schema"],
+        "allowed_actions": [
+            "inspect_captured_graphql_schema",
+            "inspect_captured_session_shape",
+            "compare_captured_graphql_shapes",
+        ],
         "forbidden_actions": [
             "replay_authenticated_requests",
             "credential_theft",
