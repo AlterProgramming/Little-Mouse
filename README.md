@@ -116,4 +116,4 @@ python tools/extract_har_temporal_evidence.py capture.har \
   -o temporal.json
 ```
 
-For same-media commenters delivered in one HAR response, the workflow now records the exact response `co_observed_at` time. That is synchronized **browser co-observation**, not synchronized participant viewing. See [`docs/workflows/har-temporal-evidence-recovery.md`](docs/workflows/har-temporal-evidence-recovery.md).
+For same-media commenters delivered in one HAR response, the workflow now records the exact response `co_observed_at` time. That closes the untimed **batch-observation** gap while keeping the remaining **participant-event-time** gap explicit: synchronized browser co-observation is not synchronized participant viewing. See [`docs/workflows/har-temporal-evidence-recovery.md`](docs/workflows/har-temporal-evidence-recovery.md).
