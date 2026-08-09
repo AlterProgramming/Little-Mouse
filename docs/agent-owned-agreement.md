@@ -18,6 +18,36 @@ Before continuing, the agent owns and records:
 - **Reciprocity and audit** — what evidence or receipt is produced so consequential observation is reviewable.
 - **Stop conditions** — the conditions that terminate execution or require a narrower agreement.
 
+## Executable gate
+
+Create a starter JSON agreement:
+
+```bash
+python tools/agent_agreement.py init agreement.json
+```
+
+Validate it:
+
+```bash
+python tools/agent_agreement.py validate agreement.json
+```
+
+Check one exact action name before execution:
+
+```bash
+python tools/agent_agreement.py check agreement.json inspect_captured_graphql_values
+```
+
+Issue an audit receipt for a declared action:
+
+```bash
+python tools/agent_agreement.py receipt agreement.json inspect_captured_graphql_values \
+  --target capture.har \
+  -o receipt.json
+```
+
+The validator checks the declared agreement structure and whether an exact action is listed. It does **not** independently prove ownership or external authorization; it prevents a workflow from silently expanding beyond the agreement it was given.
+
 ## Recovery rule
 
 When a security warning occurs:
