@@ -44,7 +44,9 @@ A person appearing in the Close Friends selector is represented as `surface_cont
 
 Likewise, comments may include coarse relative-time labels such as `3w`. When two commenters on the same media have the same displayed relative-time label, the co-engagement edge can record `same_relative_time_label_count`. This is a coarse UI bucket, **not an exact event timestamp and not evidence of synchronized viewing**.
 
-The workflow explicitly leaves these claims false unless a stronger future adapter has direct evidence:
+The separate [temporal-evidence workflow](har-temporal-evidence-recovery.md) now adds exact time coordinates where the HAR actually provides them. It can timestamp same-response browser co-observation with HAR `startedDateTime`, preserve GraphQL server times, conversation activity, read/story watermarks, and content creation timestamps, while keeping their semantic roles distinct.
+
+The workflow explicitly leaves these claims false unless a stronger adapter has direct evidence:
 
 - close-friends membership
 - synchronized viewing
@@ -91,6 +93,8 @@ On the supplied Instagram HAR, the workflow recovered:
 - **1 weakly connected component containing all 382 nodes**
 
 Compared with the previous 81-node / 145-edge relational fabric, this is approximately **371.6% more nodes** and **260.0% more edges** while remaining pseudonymized by default.
+
+The same supplied captures also contain exact timestamp-bearing channels consumed by the temporal adapter. Those timestamps do not retroactively make the activity-center comment labels exact; they add typed temporal evidence around the world fabric without collapsing different time semantics together.
 
 ## Verification criteria
 
