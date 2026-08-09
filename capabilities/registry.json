@@ -1,0 +1,69 @@
+{
+  "schema_version": "1.0",
+  "kind": "little-mouse.capability-registry",
+  "top_level_capabilities": [
+    {
+      "id": "web-search-and-report",
+      "status": "active"
+    },
+    {
+      "id": "computer-use",
+      "status": "active"
+    }
+  ],
+  "derived_workflows": [
+    {
+      "id": "har-media-recovery",
+      "status": "implemented",
+      "entrypoint": "python tools/recover_har_media.py <capture.har> -o <directory>",
+      "mode": "offline"
+    },
+    {
+      "id": "har-graphql-schema-recovery",
+      "status": "implemented",
+      "entrypoint": "python tools/inspect_har_graphql.py <capture.har>",
+      "mode": "offline",
+      "transports": ["/graphql/query", "/api/graphql"]
+    },
+    {
+      "id": "har-session-state-inventory",
+      "status": "implemented",
+      "entrypoint": "python tools/inspect_har_session.py <capture.har>",
+      "mode": "offline",
+      "default_value_exposure": "none"
+    },
+    {
+      "id": "har-graphql-differential-analysis",
+      "status": "implemented",
+      "entrypoint": "python tools/diff_har_graphql.py <before.har> <after.har>",
+      "mode": "offline",
+      "default_value_exposure": "none"
+    },
+    {
+      "id": "har-recommendation-batch-extraction",
+      "status": "implemented",
+      "entrypoint": "python tools/extract_har_recommendations.py <capture.har>",
+      "mode": "offline",
+      "default_value_exposure": "pseudonymous",
+      "value_bearing_action": "inspect_captured_recommendation_values"
+    },
+    {
+      "id": "har-graphql-projection-equivalence",
+      "status": "implemented",
+      "entrypoint": "python tools/analyze_har_projections.py <capture.har>",
+      "mode": "offline",
+      "default_value_exposure": "target fingerprints only"
+    }
+  ],
+  "negative_space": [
+    {
+      "id": "relay-browser-state-inspection",
+      "status": "unimplemented"
+    },
+    {
+      "id": "controlled-live-replay",
+      "status": "unimplemented",
+      "requires": "separately authorized execution boundary"
+    }
+  ]
+}
