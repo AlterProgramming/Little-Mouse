@@ -34,6 +34,21 @@ A new derived workflow is appropriate when all of the following are true:
 
 This means the project should prefer a growing library of narrow, evidence-producing workflows over adding broad new top-level capability labels.
 
+## Preserve fabric before projection
+
+Product surfaces often project a richer relational world into one convenient view: a profile, post, activity ledger, follower list, recommendation shortlist, or search result. Little Mouse should avoid treating any one projection as the underlying world model.
+
+When captured evidence supports it, preserve the primitive entities and multiple simultaneous edge families first. Product-style views should be derived later from that shared fabric.
+
+For example, a captured comment on a post may support all of these observations at once:
+
+- person -> media: `commented_on_media`;
+- person -> media: `authored_media` for the post owner;
+- person -> person: `commented_on_post_by`;
+- person <-> person: `co_commented_on_media` when multiple captured commenters share the same media object.
+
+The last edge is co-engagement evidence only. Without event timestamps or delivery/ranking evidence, it must not be upgraded into synchronized viewing, common recommendation delivery, or algorithmic causality.
+
 Current browser-capture negative-space coverage includes:
 
 - HAR media/body reconstruction;
@@ -41,11 +56,12 @@ Current browser-capture negative-space coverage includes:
 - GraphQL capture support across `/graphql/query` and `/api/graphql`;
 - value-blind HAR session/authentication-state inventory;
 - before/after GraphQL response-shape differential analysis;
-- pseudonymized interaction-graph reconstruction from captured relationship evidence.
+- pseudonymized interaction-graph reconstruction from captured relationship evidence;
+- post-mediated heterogeneous relational-fabric reconstruction with person/media nodes and co-engagement projections.
 
-Graph reconstruction has a stronger acceptance boundary than list extraction: a flat follower/following array is not considered a graph-network result. The workflow must produce typed directed edges between at least two nodes from relationship evidence present in the capture.
+Graph reconstruction has a stronger acceptance boundary than list extraction: a flat follower/following array is not considered a graph-network result. The workflow must produce typed edges from relationship evidence present in the capture.
 
-Adjacent negative space that may be registered later includes recommendation-batch extraction, response-projection equivalence analysis, browser-state/Relay-store inspection, additional relationship-edge adapters, and controlled live replay under an explicitly authorized execution boundary.
+Adjacent negative space that may be registered later includes recommendation-delivery observations, reliable event-time adapters, response-projection equivalence analysis, browser-state/Relay-store inspection, additional relationship-edge adapters, and controlled live replay under an explicitly authorized execution boundary.
 
 ## Security-warning routing
 
