@@ -9,7 +9,7 @@ Little Mouse has exactly two top-level capabilities:
 1. **Web search and report** — search the web, inspect results, and report what was found.
 2. **Computer use** — navigate, click, type, inspect local artifacts, and operate tools available in the environment.
 
-Everything else is a derived workflow composed from those two capabilities. See [`docs/capabilities.md`](docs/capabilities.md).
+Everything else is a derived workflow composed from those two capabilities. See [`docs/capabilities.md`](docs/capabilities.md) and the machine-readable [`capabilities/registry.json`](capabilities/registry.json).
 
 ## Project rules
 
@@ -70,3 +70,23 @@ python tools/diff_har_graphql.py before.har after.har \
 ```
 
 See [`docs/workflows/har-graphql-differential-analysis.md`](docs/workflows/har-graphql-differential-analysis.md).
+
+### HAR recommendation batch extraction
+
+Recover candidate batches, observed rank order, and the presence of ranking-context fields from recommendation responses already captured in a HAR. The default report replaces candidate identities with stable fingerprints and does not emit `social_context` or `display_reason` values.
+
+```bash
+python tools/extract_har_recommendations.py capture.har
+```
+
+See [`docs/workflows/har-recommendation-batch-extraction.md`](docs/workflows/har-recommendation-batch-extraction.md). Raw captured candidate/context values require a separately declared agreement action.
+
+### HAR GraphQL projection-equivalence analysis
+
+Group captured GraphQL operations by a stable fingerprint of their target selector and compare shared versus projection-specific response field paths. This makes it possible to distinguish rich-profile, hover-card, badge, note, highlight, and recommendation projections without exposing the raw target selector value.
+
+```bash
+python tools/analyze_har_projections.py capture.har
+```
+
+See [`docs/workflows/har-graphql-projection-equivalence.md`](docs/workflows/har-graphql-projection-equivalence.md).
