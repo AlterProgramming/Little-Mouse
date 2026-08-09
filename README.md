@@ -62,7 +62,7 @@ See [`docs/workflows/har-session-state-inventory.md`](docs/workflows/har-session
 
 ### HAR GraphQL differential analysis
 
-Compare the observed variable and response shapes for the same GraphQL operation across two captures, such as before/after a controlled setting or relationship-state change. The workflow is offline and value-blind.
+Compare the observed variable and response shapes for the same GraphQL operation across two captures, such as before/after account settings, blocking/unblocking, route changes, feature rollouts, or other controlled interventions. The workflow is offline and value-blind.
 
 ```bash
 python tools/diff_har_graphql.py before.har after.har \
@@ -106,3 +106,14 @@ python tools/extract_har_world_fabric.py capture.har \
 ```
 
 On the supplied validation capture this expands the pseudonymized fabric from 81 nodes / 145 edges to **382 nodes / 522 typed edges**. See [`docs/workflows/har-world-fabric-recovery.md`](docs/workflows/har-world-fabric-recovery.md).
+
+### HAR temporal-evidence recovery
+
+Recover exact timestamp-bearing evidence while preserving what each time actually means. The adapter distinguishes browser observation time, server transport time, content creation time, conversation activity, read/seen watermarks, and explicit participant viewing-action timestamps.
+
+```bash
+python tools/extract_har_temporal_evidence.py capture.har \
+  -o temporal.json
+```
+
+For same-media commenters delivered in one HAR response, the workflow now records the exact response `co_observed_at` time. That is synchronized **browser co-observation**, not synchronized participant viewing. See [`docs/workflows/har-temporal-evidence-recovery.md`](docs/workflows/har-temporal-evidence-recovery.md).
