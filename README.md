@@ -42,10 +42,31 @@ See [`docs/workflows/har-media-recovery.md`](docs/workflows/har-media-recovery.m
 
 ### HAR GraphQL schema recovery
 
-Recover persisted GraphQL `doc_id` values plus observed variables and response schemas from requests already captured in a HAR. The default output omits authentication/session material and captured variable values.
+Recover persisted GraphQL `doc_id` values plus observed variables and response schemas from requests already captured in a HAR. Supports both `/graphql/query` and modern `/api/graphql` transports. The default output omits authentication/session material and captured variable values.
 
 ```bash
 python tools/inspect_har_graphql.py capture.har
 ```
 
 See [`docs/workflows/har-graphql-schema-recovery.md`](docs/workflows/har-graphql-schema-recovery.md). Value-bearing inspection is separately gated by an agent-owned agreement.
+
+### HAR session-state inventory
+
+Determine which authentication/session structures are present in a capture without printing their values. The report distinguishes authenticated-session material from proof that the session can be portably replayed.
+
+```bash
+python tools/inspect_har_session.py capture.har
+```
+
+See [`docs/workflows/har-session-state-inventory.md`](docs/workflows/har-session-state-inventory.md).
+
+### HAR GraphQL differential analysis
+
+Compare the observed variable and response shapes for the same GraphQL operation across two captures, such as before/after a controlled setting or relationship-state change. The workflow is offline and value-blind.
+
+```bash
+python tools/diff_har_graphql.py before.har after.har \
+  --friendly SomeQueryName
+```
+
+See [`docs/workflows/har-graphql-differential-analysis.md`](docs/workflows/har-graphql-differential-analysis.md).
