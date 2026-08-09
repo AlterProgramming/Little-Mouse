@@ -82,7 +82,12 @@ Graph reconstruction has a stronger acceptance boundary than list extraction: a 
 
 The current world-fabric validation expands the same supplied capture from 81 nodes / 145 edges to **382 nodes / 522 edges** while keeping identities pseudonymized by default.
 
-The remaining temporal negative space is narrower: exact **participant event timestamps** joined to the relevant shared media/comment/view relationship. Current activity-center comment records still provide coarse display labels, and current read/story timestamp fields are watermarks rather than direct action times. Synchronization must remain unclaimed until compatible direct event semantics are captured.
+The temporal gap is now split into two layers:
+
+1. **filled:** exact capture/server/content/watermark times and exact same-response `co_observed_at` timestamps;
+2. **still open:** exact participant event timestamps joined to the relevant shared media/comment/view relationship.
+
+Current activity-center comment records still provide coarse display labels, and current read/story timestamp fields are watermarks rather than direct action times. Synchronization must remain unclaimed until compatible direct event semantics are captured.
 
 Other adjacent negative space includes stronger reply/thread edges, explicit tagged-account edges, recommendation-delivery observations, response-projection equivalence analysis, browser-state/Relay-store inspection, additional relationship-edge adapters, and controlled live replay under an explicitly authorized execution boundary.
 
