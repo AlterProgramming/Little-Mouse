@@ -36,18 +36,27 @@ This means the project should prefer a growing library of narrow, evidence-produ
 
 ## Preserve fabric before projection
 
-Product surfaces often project a richer relational world into one convenient view: a profile, post, activity ledger, follower list, recommendation shortlist, or search result. Little Mouse should avoid treating any one projection as the underlying world model.
+Product surfaces often project a richer relational world into one convenient view: a profile, post, activity ledger, follower list, recommendation shortlist, search result, or settings selector. Little Mouse should avoid treating any one projection as the underlying world model.
 
-When captured evidence supports it, preserve the primitive entities and multiple simultaneous edge families first. Product-style views should be derived later from that shared fabric.
+When captured evidence supports it, preserve primitive entities and multiple simultaneous edge families first. Product-style views should be derived later from that shared fabric.
 
-For example, a captured comment on a post may support all of these observations at once:
+A captured comment on a post may support several observations at once:
 
+- person -> comment: `authored_comment`;
+- comment -> media: `comment_on_media`;
 - person -> media: `commented_on_media`;
 - person -> media: `authored_media` for the post owner;
 - person -> person: `commented_on_post_by`;
 - person <-> person: `co_commented_on_media` when multiple captured commenters share the same media object.
 
-The last edge is co-engagement evidence only. Without event timestamps or delivery/ranking evidence, it must not be upgraded into synchronized viewing, common recommendation delivery, or algorithmic causality.
+Other captured surfaces can contribute additional evidence without pretending they prove stronger social relationships:
+
+- capture owner -> media: `activity_owner_liked_media` from liked-media history;
+- media -> location: `media_observed_at_location` when a captured media record includes a location;
+- UI surface -> person: `surface_contains_person` for accounts surfaced in a selection interface;
+- capture owner -> person: `activity_owner_blocked_person` from explicit blocked-account state.
+
+A selection UI is itself an observable entity. If an account appears in the Close Friends selector, the capture supports `surface_contains_person`; it does **not** automatically support `close_friend_of`. Likewise, identical coarse relative-time labels on comments are bucket evidence, not synchronized-viewing evidence.
 
 Current browser-capture negative-space coverage includes:
 
@@ -57,11 +66,14 @@ Current browser-capture negative-space coverage includes:
 - value-blind HAR session/authentication-state inventory;
 - before/after GraphQL response-shape differential analysis;
 - pseudonymized interaction-graph reconstruction from captured relationship evidence;
-- post-mediated heterogeneous relational-fabric reconstruction with person/media nodes and co-engagement projections.
+- post-mediated heterogeneous relational-fabric reconstruction;
+- wider world-fabric reconstruction across people, media, comments, locations, and UI surfaces.
 
 Graph reconstruction has a stronger acceptance boundary than list extraction: a flat follower/following array is not considered a graph-network result. The workflow must produce typed edges from relationship evidence present in the capture.
 
-Adjacent negative space that may be registered later includes recommendation-delivery observations, reliable event-time adapters, response-projection equivalence analysis, browser-state/Relay-store inspection, additional relationship-edge adapters, and controlled live replay under an explicitly authorized execution boundary.
+The current world-fabric validation expands the same supplied capture from 81 nodes / 145 edges to **382 nodes / 522 edges** while keeping identities pseudonymized by default.
+
+Adjacent negative space that may be registered later includes stronger reply/thread edges, explicit tagged-account edges, recommendation-delivery observations, reliable event-time adapters, response-projection equivalence analysis, browser-state/Relay-store inspection, additional relationship-edge adapters, and controlled live replay under an explicitly authorized execution boundary.
 
 ## Security-warning routing
 
