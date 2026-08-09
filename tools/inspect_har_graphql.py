@@ -21,6 +21,9 @@ except ImportError:  # pragma: no cover
     action_status = agreement_id = load_json = None  # type: ignore[assignment]
 
 
+GRAPHQL_PATH_MARKERS = ("/graphql/query", "/api/graphql")
+
+
 def parse_form(text: str) -> dict[str, str]:
     parsed = parse_qs(text or "", keep_blank_values=True)
     return {k: values[-1] if values else "" for k, values in parsed.items()}
@@ -57,7 +60,8 @@ def request_params(entry: dict[str, Any]) -> dict[str, str]:
 
 def is_graphql_entry(entry: dict[str, Any]) -> bool:
     url = str((entry.get("request", {}) or {}).get("url", "") or "")
-    return "/graphql/query" in url
+    path = urlsplit(url).path
+    return any(marker in path for marker in GRAPHQL_PATH_MARKERS)
 
 
 def parse_json_maybe(text: str) -> Any | None:
@@ -163,6 +167,7 @@ def extract_record(
         "entry_index": index,
         "startedDateTime": entry.get("startedDateTime"),
         "method": request.get("method"),
+        "endpoint_path": urlsplit(str(request.get("url", "") or "")).path,
         "friendly_name": params.get("fb_api_req_friendly_name"),
         "doc_id": params.get("doc_id"),
         "variables_schema": variable_schema,
