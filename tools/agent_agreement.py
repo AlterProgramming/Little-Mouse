@@ -117,6 +117,7 @@ def write_template(path: Path) -> None:
             "compare_captured_graphql_shapes",
             "extract_captured_interaction_graph",
             "extract_captured_relational_fabric",
+            "extract_captured_world_fabric",
         ],
         "forbidden_actions": [
             "replay_authenticated_requests",
