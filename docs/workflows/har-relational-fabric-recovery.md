@@ -62,6 +62,24 @@ python tools/extract_har_relational_fabric.py capture.har \
 
 The agreement must explicitly declare `extract_captured_relational_fabric_identities`.
 
+## Real-capture validation
+
+Against the Instagram HAR used to develop the interaction-graph workflow, the captured records support:
+
+- 39 person nodes;
+- 42 media nodes;
+- 81 total nodes;
+- 145 typed edges;
+- 61 unique comment evidence records;
+- 50 unique person -> media comment-incidence edges;
+- 42 person -> media authorship edges;
+- 42 commenter -> post-author interaction edges;
+- 11 commenter <-> commenter co-engagement edges;
+- 5 media objects with at least two distinct captured commenters;
+- 1 weakly connected component containing all 81 nodes.
+
+These counts are derived from the captured relationship records. They do not imply synchronized viewing or common recommendation delivery.
+
 ## Validation criteria
 
 A valid run should:
