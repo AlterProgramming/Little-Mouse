@@ -40,9 +40,12 @@ Current browser-capture negative-space coverage includes:
 - GraphQL persisted-query and runtime-schema recovery;
 - GraphQL capture support across `/graphql/query` and `/api/graphql`;
 - value-blind HAR session/authentication-state inventory;
-- before/after GraphQL response-shape differential analysis.
+- before/after GraphQL response-shape differential analysis;
+- pseudonymized interaction-graph reconstruction from captured relationship evidence.
 
-Adjacent negative space that may be registered later includes recommendation-batch extraction, response-projection equivalence analysis, browser-state/Relay-store inspection, and controlled live replay under an explicitly authorized execution boundary.
+Graph reconstruction has a stronger acceptance boundary than list extraction: a flat follower/following array is not considered a graph-network result. The workflow must produce typed directed edges between at least two nodes from relationship evidence present in the capture.
+
+Adjacent negative space that may be registered later includes recommendation-batch extraction, response-projection equivalence analysis, browser-state/Relay-store inspection, additional relationship-edge adapters, and controlled live replay under an explicitly authorized execution boundary.
 
 ## Security-warning routing
 
