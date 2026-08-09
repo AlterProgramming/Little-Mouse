@@ -1,11 +1,13 @@
 import json
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 
+import agent_agreement  # noqa: E402
 import extract_har_interaction_graph as interaction_graph  # noqa: E402
 
 
@@ -105,6 +107,24 @@ class InteractionGraphTests(unittest.TestCase):
         )
         with self.assertRaisesRegex(ValueError, "--agreement is required"):
             interaction_graph.build_graph(records, include_identities=True)
+
+    def test_starter_agreement_allows_pseudonymized_graph_not_identities(self):
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td) / "agreement.json"
+            agent_agreement.write_template(path)
+            agreement = agent_agreement.load_json(path)
+
+        allowed, reason = agent_agreement.action_status(
+            agreement, "extract_captured_interaction_graph"
+        )
+        self.assertTrue(allowed)
+        self.assertEqual(reason, "action_declared")
+
+        identity_allowed, identity_reason = agent_agreement.action_status(
+            agreement, interaction_graph.IDENTITY_ACTION
+        )
+        self.assertFalse(identity_allowed)
+        self.assertEqual(identity_reason, "action_not_declared")
 
 
 if __name__ == "__main__":
