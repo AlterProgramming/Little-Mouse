@@ -82,3 +82,15 @@ python tools/extract_har_interaction_graph.py capture.har \
 ```
 
 See [`docs/workflows/har-interaction-graph-recovery.md`](docs/workflows/har-interaction-graph-recovery.md). Identity-bearing labels are separately gated by an agent-owned agreement.
+
+### HAR relational-fabric recovery
+
+Preserve the **post as an entity** and recover several simultaneous edge families from the same captured comment evidence: person → media authorship/comment edges, commenter → post-author interaction edges, and commenter ↔ commenter co-engagement edges for people observed on the same media object.
+
+```bash
+python tools/extract_har_relational_fabric.py capture.har \
+  --require-fabric \
+  -o fabric.json
+```
+
+The default output is pseudonymized. Co-engagement means shared captured media, not synchronized viewing or proof of common recommendation delivery. See [`docs/workflows/har-relational-fabric-recovery.md`](docs/workflows/har-relational-fabric-recovery.md).
