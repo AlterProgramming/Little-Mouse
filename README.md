@@ -117,3 +117,7 @@ python tools/extract_har_temporal_evidence.py capture.har \
 ```
 
 For same-media commenters delivered in one HAR response, the workflow now records the exact response `co_observed_at` time. That closes the untimed **batch-observation** gap while keeping the remaining **participant-event-time** gap explicit: synchronized browser co-observation is not synchronized participant viewing. See [`docs/workflows/har-temporal-evidence-recovery.md`](docs/workflows/har-temporal-evidence-recovery.md).
+
+## Validation
+
+The repository runs `python -m unittest discover -s tests -v` through `.github/workflows/validate-negative-space.yml` for changes to the registered negative-space workflows.
