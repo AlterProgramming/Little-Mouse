@@ -1,12 +1,14 @@
 import base64
 import json
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 
+import agent_agreement  # noqa: E402
 import extract_har_temporal_evidence as temporal  # noqa: E402
 
 
@@ -118,6 +120,17 @@ class TemporalEvidenceTests(unittest.TestCase):
         self.assertNotIn("alpha", dumped)
         self.assertNotIn("beta", dumped)
         self.assertNotIn('"m1"', dumped)
+
+    def test_starter_agreement_registers_temporal_evidence_action(self):
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td) / "agreement.json"
+            agent_agreement.write_template(path)
+            agreement = agent_agreement.load_json(path)
+        allowed, reason = agent_agreement.action_status(
+            agreement, "extract_captured_temporal_evidence"
+        )
+        self.assertTrue(allowed)
+        self.assertEqual(reason, "action_declared")
 
 
 if __name__ == "__main__":
