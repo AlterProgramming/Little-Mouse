@@ -29,11 +29,13 @@ The edge exposes:
 - `shared_media_count`: number of distinct captured media objects shared by the pair;
 - `shared_capture_batch_count`: number of HAR response entries in which both commenters were observed together for the same media object.
 
-A capture batch is **not a timestamp**. It is evidence that the records were delivered together in the browser capture.
+A capture batch is not a **participant event timestamp**, but the HAR entry itself can have an exact `startedDateTime`. The [temporal-evidence workflow](har-temporal-evidence-recovery.md) now preserves that distinction by attaching an exact `co_observed_at` time to same-response co-observation while keeping `participant_event_time: false` and `synchronized_viewing_claimed: false`.
 
 ## Inference boundary
 
-The base relational-fabric extractor intentionally does not turn coarse UI time labels or capture batches into synchronized-viewing claims. The newer [world-fabric workflow](har-world-fabric-recovery.md) can preserve displayed relative-time buckets as additional evidence while still keeping exact timestamps, synchronization, shared recommendation delivery, and algorithmic causality unclaimed.
+The base relational-fabric extractor intentionally does not turn coarse UI time labels or capture batches into synchronized-viewing claims. The [world-fabric workflow](har-world-fabric-recovery.md) can preserve displayed relative-time buckets as additional evidence, while the [temporal-evidence workflow](har-temporal-evidence-recovery.md) preserves exact capture/server/content/watermark timestamps according to their actual semantics.
+
+The remaining missing evidence for synchronized viewing is narrower: a timestamp must be an explicit participant view-action time joined to the relevant participant and media. Exact capture observation time, read watermarks, story seen-through watermarks, and content creation times do not satisfy that requirement.
 
 ## Command
 
@@ -63,5 +65,6 @@ A valid run should:
 - produce multiple typed edge families from the same captured evidence;
 - produce co-engagement edges only from distinct commenters sharing captured media;
 - distinguish shared-media evidence from same-capture-batch evidence;
+- allow the temporal adapter to timestamp co-observation without reclassifying it as participant event time;
 - emit no usernames, user IDs, media IDs, comment/post text, cookies, or tokens by default;
 - make no synchronized-viewing, shared-ranking, or algorithmic-causality claim without stronger evidence.
