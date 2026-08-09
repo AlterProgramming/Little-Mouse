@@ -60,7 +60,9 @@ No usernames, user IDs, media IDs, comment text, cookies, or session secrets are
 
 The supplied Instagram captures already contain exact millisecond/second temporal material in several independent channels, including HAR observation times, GraphQL server timing, direct-thread activity/read watermarks, story seen-through watermarks, and media creation times.
 
-The activity-center comment records still expose coarse relative labels rather than exact per-comment creation timestamps. Therefore the new adapter can timestamp **when the browser co-observed the records**, but it does not turn those batches into synchronized participant viewing events.
+In the activity-center comment capture, the existing 61 comment evidence records produce **10 same-media / same-response commenter-pair co-observations across 3 exact HAR response moments**. Those observations now have exact `co_observed_at` values rather than only batch counts.
+
+The same capture still contains no explicit per-participant view-action timestamp for those comments/media, and its comment ages remain coarse UI labels. Therefore `exact_view_action_timestamps_available` and `synchronized_viewing_claimed` remain false. This is now a specific missing field class rather than an unimplemented temporal-analysis gap.
 
 ## Verification criteria
 
