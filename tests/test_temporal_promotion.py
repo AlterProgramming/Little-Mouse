@@ -26,6 +26,7 @@ class TemporalPromotionTests(unittest.TestCase):
             {"events": [event(1786240501065, "2026-08-09T19:16:19.456Z")]},
             {"events": [event(1786240601065, "2026-08-09T19:24:00.000Z")]},
         ])
+        self.assertEqual(result["result_status"], "EVIDENCE")
         self.assertEqual(result["bounded_action_interval_count"], 1)
         row = result["promotions"][0]
         self.assertEqual(row["lower_bound_observed_at"], "2026-08-09T19:16:19.456Z")
@@ -33,13 +34,23 @@ class TemporalPromotionTests(unittest.TestCase):
         self.assertFalse(row["exact_event_time_claimed"])
         self.assertFalse(row["participant_action_semantics_claimed"])
         self.assertTrue(row["reversible"])
+        self.assertEqual(result["epistemic"]["claim_count"], 0)
 
-    def test_unchanged_watermark_does_not_invent_action(self):
+    def test_unchanged_watermark_is_first_class_no_result(self):
         result = promotion.promote([
             {"events": [event(1786240501065, "2026-08-09T19:16:19.456Z")]},
             {"events": [event(1786240501065, "2026-08-09T19:24:00.000Z")]},
         ])
         self.assertEqual(result["bounded_action_interval_count"], 0)
+        self.assertEqual(result["result_status"], "NO_RESULT")
+        self.assertFalse(result["epistemic"]["delivery_obligation"])
+        self.assertFalse(result["epistemic"]["replacement_hypothesis_generated"])
+
+    def test_empty_capture_is_no_result_not_synthetic_insight(self):
+        result = promotion.promote([{"events": []}])
+        self.assertEqual(result["result_status"], "NO_RESULT")
+        self.assertEqual(result["epistemic"]["items"], [])
+        self.assertEqual(result["epistemic"]["claim_count"], 0)
 
     def test_regression_is_retained_as_contradiction(self):
         result = promotion.promote([
@@ -49,14 +60,18 @@ class TemporalPromotionTests(unittest.TestCase):
         self.assertEqual(result["bounded_action_interval_count"], 0)
         self.assertEqual(result["contradiction_count"], 1)
         self.assertEqual(result["contradictions"][0]["type"], "non_monotonic_watermark")
+        self.assertEqual(result["result_status"], "EVIDENCE")
+        self.assertEqual(result["epistemic"]["claim_count"], 0)
 
     def test_direct_action_requires_explicit_action_semantics(self):
         direct = event(1786240601065, "2026-08-09T19:24:00.000Z", semantic="view_action")
         direct["supports_synchronized_viewing"] = True
         result = promotion.promote([{"events": [direct]}])
         self.assertEqual(result["direct_action_count"], 1)
+        self.assertEqual(result["result_status"], "EVIDENCE")
         self.assertTrue(result["inference_limits"]["direct_view_action_timestamps_available"])
         self.assertFalse(result["inference_limits"]["synchronized_viewing_claimed"])
+        self.assertFalse(result["inference_limits"]["replacement_hypothesis_generated"])
 
 
 if __name__ == "__main__":
