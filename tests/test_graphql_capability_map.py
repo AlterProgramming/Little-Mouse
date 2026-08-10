@@ -25,6 +25,17 @@ class GraphqlCapabilityMapTests(unittest.TestCase):
                 "variables=" + quote(json.dumps(variables)),
             ]
         )
+        response = {
+            "data": {
+                "user": {
+                    "id": "1",
+                    "username": "someone",
+                    "followed_by_viewer": True,
+                    "is_bestie": False,
+                    "opaque_rank_signal": 0.42,
+                }
+            }
+        }
         return {
             "log": {
                 "entries": [
@@ -39,9 +50,7 @@ class GraphqlCapabilityMapTests(unittest.TestCase):
                         },
                         "response": {
                             "status": 200,
-                            "content": {
-                                "text": json.dumps({"data": {"x": {"id": "1"}}})
-                            },
+                            "content": {"text": json.dumps(response)},
                         },
                     }
                 ]
@@ -85,6 +94,39 @@ class GraphqlCapabilityMapTests(unittest.TestCase):
             ),
             ["input.count_per_page", "userID"],
         )
+
+    def test_target_response_fields_are_classified_conservatively(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "capture.har"
+            path.write_text(json.dumps(self._har()), encoding="utf-8")
+            result = capability_map.build([path])
+
+        classes = result["operations"][0]["target_response_field_classes"]
+        self.assertTrue(classes["applicable"])
+
+        viewer_paths = {item["path"] for item in classes["samples"]["viewer_target"]}
+        public_paths = {item["path"] for item in classes["samples"]["public_target"]}
+        private_paths = {
+            item["path"] for item in classes["samples"]["target_private_candidate"]
+        }
+        unknown_paths = {item["path"] for item in classes["samples"]["unknown"]}
+
+        self.assertIn("data.user.followed_by_viewer", viewer_paths)
+        self.assertIn("data.user.username", public_paths)
+        self.assertIn("data.user.is_bestie", private_paths)
+        self.assertIn("data.user.opaque_rank_signal", unknown_paths)
+
+    def test_bestie_is_a_candidate_not_a_disclosure_claim(self):
+        result = capability_map.classify_response_path("data.user.is_bestie")
+        self.assertEqual(result["class"], "target_private_candidate")
+        self.assertTrue(result["requires_semantic_verification"])
+
+    def test_non_target_operation_does_not_get_target_field_classes(self):
+        summary = capability_map.classify_target_response_paths(
+            {"data.viewer.username"}, {"after"}
+        )
+        self.assertFalse(summary["applicable"])
+        self.assertEqual(summary["counts"], {})
 
 
 if __name__ == "__main__":
