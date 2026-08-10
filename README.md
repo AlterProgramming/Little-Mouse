@@ -118,6 +118,19 @@ python tools/extract_har_temporal_evidence.py capture.har \
 
 For same-media commenters delivered in one HAR response, the workflow now records the exact response `co_observed_at` time. That closes the untimed **batch-observation** gap while keeping the remaining **participant-event-time** gap explicit: synchronized browser co-observation is not synchronized participant viewing. See [`docs/workflows/har-temporal-evidence-recovery.md`](docs/workflows/har-temporal-evidence-recovery.md).
 
+### HAR trace ledger and interaction viewer
+
+Build an append-only observation history across one or more captures. Stable captured user IDs join identity continuity while usernames remain time-stamped aliases rather than identity keys. The ledger also records capture-owner actions that left recoverable traces, currently comments, liked media, and blocked-account state.
+
+```bash
+python tools/extract_har_trace_ledger.py before.har after.har \
+  -o trace-ledger.json
+python tools/render_trace_viewer.py trace-ledger.json \
+  -o trace-viewer.html
+```
+
+The default ledger is pseudonymous and the viewer is a self-contained offline HTML file. HAR time is treated as **observation time**, not silently promoted to exact action or rename time. See [`docs/workflows/har-trace-ledger-viewer.md`](docs/workflows/har-trace-ledger-viewer.md).
+
 ## Validation
 
 The repository runs `python -m unittest discover -s tests -v` through `.github/workflows/validate-negative-space.yml` for changes to the registered negative-space workflows.
