@@ -120,6 +120,7 @@ def write_template(path: Path) -> None:
             "extract_captured_world_fabric",
             "extract_captured_temporal_evidence",
             "extract_captured_trace_ledger",
+            "extract_captured_frontier_manifest_identities",
         ],
         "forbidden_actions": [
             "replay_authenticated_requests",
