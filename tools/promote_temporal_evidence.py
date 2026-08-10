@@ -14,6 +14,8 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
+from evidence_contract import EvidenceItem, build_result, no_result
+
 WATERMARK_SEMANTICS = {"read_through_watermark", "story_seen_through_watermark"}
 DIRECT_ACTION_SEMANTICS = {"view_action"}
 
@@ -37,11 +39,16 @@ def promote(captures: list[dict[str, Any]]) -> dict[str, Any]:
 
     intervals: list[dict[str, Any]] = []
     contradictions: list[dict[str, Any]] = []
+    epistemic_items: list[EvidenceItem] = []
+
     for (subject, semantic), rows in sorted(by_subject_semantic.items()):
         rows.sort(key=lambda r: (r.get("capture_index", -1), r.get("timestamp_ms", 0)))
         for previous, current in zip(rows, rows[1:]):
             old = int(previous.get("timestamp_ms", 0))
             new = int(current.get("timestamp_ms", 0))
+            previous_ref = f"capture:{previous['capture_index']}:{subject}:{semantic}:{old}"
+            current_ref = f"capture:{current['capture_index']}:{subject}:{semantic}:{new}"
+
             if new < old:
                 contradictions.append({
                     "type": "non_monotonic_watermark",
@@ -52,9 +59,15 @@ def promote(captures: list[dict[str, Any]]) -> dict[str, Any]:
                     "previous_capture_index": previous["capture_index"],
                     "current_capture_index": current["capture_index"],
                 })
+                epistemic_items.append(EvidenceItem(
+                    level="OBSERVATION",
+                    statement="Comparable watermark observations are non-monotonic; no action interval is promoted.",
+                    support=(previous_ref, current_ref),
+                ))
                 continue
             if new == old:
                 continue
+
             lower = _observation_time(previous)
             upper = _observation_time(current)
             intervals.append({
@@ -70,14 +83,30 @@ def promote(captures: list[dict[str, Any]]) -> dict[str, Any]:
                 "participant_action_semantics_claimed": False,
                 "reversible": True,
             })
+            epistemic_items.append(EvidenceItem(
+                level="DERIVATION",
+                statement="A comparable watermark advanced between two exact capture observations, yielding a bounded interval only.",
+                support=(previous_ref, current_ref),
+            ))
 
     direct_actions = [
         row for row in observations if row.get("semantic") in DIRECT_ACTION_SEMANTICS
         and row.get("supports_synchronized_viewing") is True
     ]
+    for row in direct_actions:
+        epistemic_items.append(EvidenceItem(
+            level="OBSERVATION",
+            statement="An explicit participant action-time field was present in the typed temporal evidence.",
+            support=(
+                f"capture:{row.get('capture_index')}:{row.get('subject_fingerprint')}:{row.get('semantic')}:{row.get('timestamp_ms')}",
+            ),
+        ))
+
+    epistemic = build_result(epistemic_items) if epistemic_items else no_result()
 
     return {
         "representation": "promoted_temporal_evidence",
+        "result_status": epistemic["result_status"],
         "capture_count": len(captures),
         "source_observation_count": len(observations),
         "bounded_action_interval_count": len(intervals),
@@ -86,11 +115,13 @@ def promote(captures: list[dict[str, Any]]) -> dict[str, Any]:
         "promotions": intervals,
         "direct_actions": direct_actions,
         "contradictions": contradictions,
+        "epistemic": epistemic,
         "inference_limits": {
             "watermark_transition_is_exact_action_time": False,
             "bounded_interval_is_direct_view_action": False,
             "direct_view_action_timestamps_available": bool(direct_actions),
             "synchronized_viewing_claimed": False,
+            "replacement_hypothesis_generated": False,
         },
     }
 
