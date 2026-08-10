@@ -14,7 +14,7 @@ import json
 import os
 import re
 import sys
-from collections import defaultdict
+from collections import defaultdict, deque
 from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, urlparse
@@ -107,7 +107,11 @@ def build_trace_ledger(
     include_identities: bool = False,
     agreement: Path | None = None,
     pseudonym_secret: bytes | None = None,
+    focus_username: str | None = None,
+    focus_user_id: str | None = None,
 ) -> dict[str, Any]:
+    if focus_username and focus_user_id:
+        raise ValueError("use only one of focus_username or focus_user_id")
     aid = require_identity_agreement(agreement) if include_identities else None
     secret = pseudonym_secret or os.urandom(32)
 
@@ -231,6 +235,27 @@ def build_trace_ledger(
                     "entry_index": int(record.get("entry_index", -1)),
                 })
 
+    focus_key: str | None = None
+    focus_resolution: str | None = None
+    if focus_user_id:
+        candidate = stable_key("person_uid", str(focus_user_id))
+        if ("person", candidate) not in raw_entities:
+            raise ValueError("focus user ID was not observed in the supplied captures")
+        focus_key = candidate
+        focus_resolution = "stable_user_id"
+    elif focus_username:
+        matches = {
+            str(obs["entity_key"])
+            for obs in alias_obs_raw
+            if str(obs.get("alias") or "").casefold() == focus_username.casefold()
+        }
+        if not matches:
+            raise ValueError("focus username was not observed in the supplied captures")
+        if len(matches) > 1:
+            raise ValueError("focus username resolves to multiple stable entities")
+        focus_key = next(iter(matches))
+        focus_resolution = "captured_alias"
+
     def pseudonym(kind: str, key: str) -> str:
         digest = hashlib.sha256(secret + b"\0" + key.encode("utf-8")).hexdigest()[:12]
         return f"{kind}_{digest}"
@@ -327,6 +352,7 @@ def build_trace_ledger(
             "id": entity_ids[key],
             "type": entity_types[key],
             "is_capture_actor": key in actor_keys,
+            "is_focus": key == focus_key,
         }
         for key in sorted(entity_ids, key=lambda key: entity_ids[key])
     ]
@@ -357,6 +383,57 @@ def build_trace_ledger(
         "traces": traces,
         "context_observations": context_observations,
     }
+
+    if focus_key:
+        focus_id = entity_ids[focus_key]
+        adjacency: dict[str, set[str]] = defaultdict(set)
+        for row in traces:
+            actor = str(row["actor"])
+            target = str(row["target"])
+            via = row.get("via")
+            if via:
+                via_id = str(via)
+                adjacency[actor].add(via_id)
+                adjacency[via_id].add(actor)
+                adjacency[via_id].add(target)
+                adjacency[target].add(via_id)
+            else:
+                adjacency[actor].add(target)
+                adjacency[target].add(actor)
+        distances: dict[str, int] = {focus_id: 0}
+        queue: deque[str] = deque([focus_id])
+        while queue:
+            node = queue.popleft()
+            for neighbor in sorted(adjacency.get(node, set())):
+                if neighbor not in distances:
+                    distances[neighbor] = distances[node] + 1
+                    queue.append(neighbor)
+        hop_counts: dict[str, int] = defaultdict(int)
+        for distance in distances.values():
+            hop_counts[f"hop_{distance}"] += 1
+        result["focus"] = {
+            "entity": focus_id,
+            "resolution": focus_resolution,
+            "identity_label_emitted": False,
+            "alias_observation_count": sum(1 for row in alias_history if row["entity"] == focus_id),
+            "incident_trace_count": sum(
+                1
+                for row in traces
+                if focus_id in {str(row["actor"]), str(row["target"]), str(row.get("via") or "")}
+            ),
+            "incident_context_count": sum(1 for row in context_observations if row["entity"] == focus_id),
+        }
+        result["focus_view"] = {
+            "center": focus_id,
+            "projection_only": True,
+            "underlying_graph_centerless": True,
+            "hop_semantics": "Undirected evidence-path distance through captured trace relations; it is not social closeness.",
+            "reachable_node_count": len(distances),
+            "max_hop": max(distances.values()) if distances else 0,
+            "hop_counts": dict(sorted(hop_counts.items(), key=lambda item: int(item[0].split("_")[1]))),
+            "distances": dict(sorted(distances.items(), key=lambda item: (item[1], item[0]))),
+        }
+
     if aid:
         result["agreement_id"] = aid
     return result
@@ -368,6 +445,9 @@ def main() -> int:
     ap.add_argument("-o", "--output", type=Path)
     ap.add_argument("--include-identities", action="store_true")
     ap.add_argument("--agreement", type=Path)
+    focus = ap.add_mutually_exclusive_group()
+    focus.add_argument("--focus-username", help="Center the output projection on a captured username without emitting that identity by default")
+    focus.add_argument("--focus-user-id", help="Center the output projection on a captured stable user ID without emitting that identity by default")
     args = ap.parse_args()
 
     captures: list[dict[str, Any]] = []
@@ -377,7 +457,13 @@ def main() -> int:
         captures.append(capture_evidence(har, path.name))
 
     try:
-        result = build_trace_ledger(captures, include_identities=args.include_identities, agreement=args.agreement)
+        result = build_trace_ledger(
+            captures,
+            include_identities=args.include_identities,
+            agreement=args.agreement,
+            focus_username=args.focus_username,
+            focus_user_id=args.focus_user_id,
+        )
     except ValueError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 3
