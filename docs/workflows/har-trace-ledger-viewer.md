@@ -1,6 +1,6 @@
 # HAR trace-ledger and interaction viewer
 
-Use this workflow when the question is not merely **what relationships exist**, but **which captured actions left an observable trace, when those traces were observed, and how identity labels changed across captures**.
+Use this workflow when the question is not merely **what relationships exist**, but **which captured actions left an observable trace, when those traces were observed, how identity labels changed across captures, or what the evidence looks like when temporarily projected around one profile**.
 
 The workflow has two stages:
 
@@ -50,6 +50,45 @@ Each trace records:
 
 This matters because a trace recoverable from the browser capture is not automatically proof that the trace was public to another person.
 
+## Focus projections
+
+A username or stable user ID that is already present in the authorized capture can be selected as the **viewing center** without emitting that identity in the default output:
+
+```bash
+python tools/extract_har_trace_ledger.py capture.har \
+  --focus-username target_account \
+  -o focused-ledger.json
+```
+
+or:
+
+```bash
+python tools/extract_har_trace_ledger.py capture.har \
+  --focus-user-id 123456789 \
+  -o focused-ledger.json
+```
+
+The focus is resolved before pseudonymization and emitted only as the pseudonymous center entity. This does not require identity-bearing output because the chosen identity is an input selector rather than an emitted label.
+
+The focused ledger records undirected **evidence-path distance** through trace relations. When a comment trace has a preserved comment entity, the path is represented as actor -> comment -> media rather than collapsing the comment away.
+
+A hop therefore means:
+
+- **hop 0** — the selected focus entity;
+- **hop 1** — directly captured trace relation;
+- **hop 2+** — connected through additional captured trace entities or actors.
+
+Hop distance is not friendship, intent, recommendation rank, or social closeness. A profile that connects to the capture owner and then to many owner traces will visually expose those traces as farther hops; the viewer must not re-attribute those owner actions to the focused profile.
+
+The focus projection is explicitly marked:
+
+```text
+projection_only: true
+underlying_graph_centerless: true
+```
+
+This keeps the architectural rule intact: **the graph has no privileged center; the viewer may temporarily choose one for navigation.**
+
 ## Commands
 
 Build one ledger from one capture:
@@ -76,12 +115,11 @@ python tools/render_trace_viewer.py trace-ledger.json \
 The HTML has no network dependencies. It embeds the ledger and provides:
 
 - summary counts;
-- an interaction-trace projection;
+- a profile-centered evidence map when a focus exists;
+- selectable evidence-hop radius;
 - action-type filters;
 - an observed trace timeline;
 - per-entity alias history.
-
-The actor is emphasized only in this viewer because the viewer answers an actor-specific question. That does not change the centerless world-fabric model underneath it.
 
 ## Real-capture validation
 
@@ -96,7 +134,18 @@ Against the supplied Instagram HAR, the current adapter recovered:
 - **223 UI-context observations** from the captured Close Friends selector;
 - **0 alias transitions in this single capture**.
 
-The zero transition count is expected: one snapshot can preserve many aliases but cannot prove a rename unless the same stable identity is observed under multiple aliases. Multi-capture input is the intended recovery path for that case.
+For the currently selected blocked-profile focus in that capture, the focused trace projection yields:
+
+- **1 focus node** at hop 0;
+- **1 directly connected node** at hop 1;
+- **82 nodes** at hop 2;
+- **42 nodes** at hop 3;
+- **126 reachable nodes** total;
+- **3 maximum evidence hops**.
+
+Only the hop-1 relationship is directly incident to the focused profile in this trace ledger. The wider rings are evidence paths through the capture owner and preserved trace entities, not claims that the focused profile performed or caused those farther actions.
+
+The zero alias-transition count is expected: one snapshot can preserve many aliases but cannot prove a rename unless the same stable identity is observed under multiple aliases. Multi-capture input is the intended recovery path for that case.
 
 ## Inference boundary
 
@@ -106,6 +155,8 @@ The ledger must not silently convert:
 - first observation of a new alias into exact rename time;
 - capture visibility into public visibility;
 - UI-surface presence into relationship membership;
+- evidence-hop distance into social closeness;
+- a path through the capture owner into an action by the focused profile;
 - disappearance from a later projection into deletion from history.
 
 Later observations append to the ledger. They do not erase earlier observations.
