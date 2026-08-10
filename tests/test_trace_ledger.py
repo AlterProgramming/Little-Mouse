@@ -103,12 +103,52 @@ class TraceLedgerTests(unittest.TestCase):
             all(not row["public_visibility_claimed"] for row in ledger["traces"])
         )
 
+    def test_focus_username_resolves_to_pseudonymous_center(self):
+        capture = {
+            "capture_name": "x.har",
+            "actor_id": "1",
+            "timestamps": {0: "2026-01-01T00:00:00Z"},
+            "comments": [],
+            "likes": [],
+            "blocked": [
+                {
+                    "entry_index": 0,
+                    "user_id": "3",
+                    "username": "secret_alias",
+                    "is_auto_blocked": False,
+                }
+            ],
+            "surfaced": [],
+        }
+        ledger = trace.build_trace_ledger(
+            [capture],
+            pseudonym_secret=b"z" * 32,
+            focus_username="secret_alias",
+        )
+        self.assertEqual(ledger["focus"]["resolution"], "captured_alias")
+        self.assertFalse(ledger["focus"]["identity_label_emitted"])
+        self.assertEqual(ledger["focus"]["incident_trace_count"], 1)
+        self.assertTrue(ledger["focus_view"]["projection_only"])
+        self.assertTrue(ledger["focus_view"]["underlying_graph_centerless"])
+        self.assertEqual(ledger["focus_view"]["hop_counts"], {"hop_0": 1, "hop_1": 1})
+        self.assertNotIn("secret_alias", json.dumps(ledger))
+
     def test_viewer_embeds_ledger_without_inventing_public_visibility(self):
         ledger = {
             "trace_event_count": 1,
             "alias_observation_count": 0,
             "alias_transition_count": 0,
             "node_count": 2,
+            "focus": {"entity": "person_a", "incident_trace_count": 1},
+            "focus_view": {
+                "center": "person_a",
+                "reachable_node_count": 2,
+                "max_hop": 1,
+            },
+            "nodes": [
+                {"id": "person_a", "type": "person", "is_capture_actor": False, "is_focus": True},
+                {"id": "media_b", "type": "media", "is_capture_actor": False, "is_focus": False},
+            ],
             "traces": [
                 {
                     "actor": "person_a",
@@ -123,8 +163,9 @@ class TraceLedgerTests(unittest.TestCase):
             "alias_history": [],
         }
         text = render_trace_viewer.render(ledger)
-        self.assertIn("Interaction trace map", text)
-        self.assertIn("recoverable from the capture", text)
+        self.assertIn("Profile-centered evidence map", text)
+        self.assertIn("temporary focus projection", text)
+        self.assertIn("underlying graph remains centerless", text)
         self.assertIn("liked_media", text)
 
 
