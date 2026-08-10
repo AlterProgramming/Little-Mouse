@@ -42,10 +42,107 @@ See [`docs/workflows/har-media-recovery.md`](docs/workflows/har-media-recovery.m
 
 ### HAR GraphQL schema recovery
 
-Recover persisted GraphQL `doc_id` values plus observed variables and response schemas from requests already captured in a HAR. The default output omits authentication/session material and captured variable values.
+Recover persisted GraphQL `doc_id` values plus observed variables and response schemas from requests already captured in a HAR. Supports both `/graphql/query` and modern `/api/graphql` transports. The default output omits authentication/session material and captured variable values.
 
 ```bash
 python tools/inspect_har_graphql.py capture.har
 ```
 
 See [`docs/workflows/har-graphql-schema-recovery.md`](docs/workflows/har-graphql-schema-recovery.md). Value-bearing inspection is separately gated by an agent-owned agreement.
+
+### HAR session-state inventory
+
+Determine which authentication/session structures are present in a capture without printing their values. The report distinguishes authenticated-session material from proof that the session can be portably replayed.
+
+```bash
+python tools/inspect_har_session.py capture.har
+```
+
+See [`docs/workflows/har-session-state-inventory.md`](docs/workflows/har-session-state-inventory.md).
+
+### HAR GraphQL differential analysis
+
+Compare the observed variable and response shapes for the same GraphQL operation across two captures, such as before/after account settings, blocking/unblocking, route changes, feature rollouts, or other controlled interventions. The workflow is offline and value-blind.
+
+```bash
+python tools/diff_har_graphql.py before.har after.har \
+  --friendly SomeQueryName
+```
+
+See [`docs/workflows/har-graphql-differential-analysis.md`](docs/workflows/har-graphql-differential-analysis.md).
+
+### HAR interaction-graph recovery
+
+Recover a **directed weighted graph network** from relationship-bearing activity already captured in a HAR. The current extractor maps captured comment-author → post-author interactions and pseudonymizes identities by default. A flat follower/following list does not satisfy the graph acceptance criterion.
+
+```bash
+python tools/extract_har_interaction_graph.py capture.har \
+  --require-network \
+  -o graph.json
+```
+
+See [`docs/workflows/har-interaction-graph-recovery.md`](docs/workflows/har-interaction-graph-recovery.md). Identity-bearing labels are separately gated by an agent-owned agreement.
+
+### HAR relational-fabric recovery
+
+Preserve the **post as an entity** and recover several simultaneous edge families from the same captured comment evidence: person → media authorship/comment edges, commenter → post-author interaction edges, and commenter ↔ commenter co-engagement edges for people observed on the same media object.
+
+```bash
+python tools/extract_har_relational_fabric.py capture.har \
+  --require-fabric \
+  -o fabric.json
+```
+
+The default output is pseudonymized. Co-engagement means shared captured media, not synchronized viewing or proof of common recommendation delivery. See [`docs/workflows/har-relational-fabric-recovery.md`](docs/workflows/har-relational-fabric-recovery.md).
+
+### HAR world-fabric recovery
+
+Preserve a wider **centerless world model** across people, media, comments, locations, and captured UI surfaces. The current adapter combines comment activity, liked-media activity, explicit blocked-account state, and accounts surfaced in the Close Friends selector without confusing selection-surface presence with actual membership.
+
+```bash
+python tools/extract_har_world_fabric.py capture.har \
+  --require-fabric \
+  -o world.json
+```
+
+On the supplied validation capture this expands the pseudonymized fabric from 81 nodes / 145 edges to **382 nodes / 522 typed edges**. See [`docs/workflows/har-world-fabric-recovery.md`](docs/workflows/har-world-fabric-recovery.md).
+
+### HAR temporal-evidence recovery
+
+Recover exact timestamp-bearing evidence while preserving what each time actually means. The adapter distinguishes browser observation time, server transport time, content creation time, conversation activity, read/seen watermarks, and explicit participant viewing-action timestamps.
+
+```bash
+python tools/extract_har_temporal_evidence.py capture.har \
+  -o temporal.json
+```
+
+For same-media commenters delivered in one HAR response, the workflow now records the exact response `co_observed_at` time. That closes the untimed **batch-observation** gap while keeping the remaining **participant-event-time** gap explicit: synchronized browser co-observation is not synchronized participant viewing. See [`docs/workflows/har-temporal-evidence-recovery.md`](docs/workflows/har-temporal-evidence-recovery.md).
+
+### HAR trace ledger and interaction viewer
+
+Build an append-only observation history across one or more captures. Stable captured user IDs join identity continuity while usernames remain time-stamped aliases rather than identity keys. The ledger also records capture-owner actions that left recoverable traces, currently comments, liked media, and blocked-account state.
+
+```bash
+python tools/extract_har_trace_ledger.py before.har after.har \
+  -o trace-ledger.json
+python tools/render_trace_viewer.py trace-ledger.json \
+  -o trace-viewer.html
+```
+
+The default ledger is pseudonymous and the viewer is a self-contained offline HTML file. HAR time is treated as **observation time**, not silently promoted to exact action or rename time. See [`docs/workflows/har-trace-ledger-viewer.md`](docs/workflows/har-trace-ledger-viewer.md).
+
+### HAR frontier manifest
+
+Turn captured stable identifiers and media shortcodes into an explicit **centerless expansion frontier** for later web-search/computer-use observation. The manifest records provenance, open frontier objects, and a node budget without inventing nodes to satisfy that budget.
+
+```bash
+python tools/extract_har_frontier_manifest.py capture.har \
+  --target-nodes 10000 \
+  -o frontier.json
+```
+
+Identity-bearing public resolvers are separately gated with `--include-identities --agreement agreement.json`. Future observations must be appended as newly observed evidence rather than rewritten into the original capture. See [`docs/workflows/har-frontier-manifest.md`](docs/workflows/har-frontier-manifest.md).
+
+## Validation
+
+The repository runs `python -m unittest discover -s tests -v` through `.github/workflows/validate-negative-space.yml` for changes to the registered negative-space workflows.
