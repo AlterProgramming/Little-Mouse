@@ -16,6 +16,22 @@ TARGET_KEY_RE = re.compile(
     re.I,
 )
 
+PUBLIC_TARGET_HINTS = (
+    "username", "full_name", "biography", "profile_pic", "profile_picture",
+    "is_verified", "is_private", "follower_count", "following_count",
+    "media_count", "post_count", "category_name",
+)
+VIEWER_TARGET_HINTS = (
+    "viewer", "followed_by_viewer", "follows_viewer", "requested_by_viewer",
+    "has_requested_viewer", "blocked_by_viewer", "restricted_by_viewer",
+    "mutual", "friendship_status", "relationship",
+)
+TARGET_PRIVATE_HINTS = (
+    "bestie", "close_friend", "close_friends", "email", "phone", "birthday",
+    "message_restriction", "messaging_restriction", "sensitive_content",
+    "account_setting", "privacy_setting",
+)
+
 
 def parse_json_maybe(text: str) -> Any | None:
     text = (text or "").strip()
@@ -128,6 +144,80 @@ def candidate_axes(variables: Any) -> list[str]:
     return sorted(axes)
 
 
+def has_identity_target_axis(axes: set[str] | list[str]) -> bool:
+    """True when an operation exposes a plausible person/account selector."""
+    for axis in axes:
+        leaf = str(axis).split(".")[-1].lower()
+        if leaf in {"target_id", "user_id", "userid", "igid", "username", "owner_id", "ownerid"}:
+            return True
+        if ("user" in leaf or "target" in leaf or "owner" in leaf) and "id" in leaf:
+            return True
+    return False
+
+
+def classify_response_path(path: str) -> dict[str, Any]:
+    """Classify one observed response path without looking at its value."""
+    lowered = path.lower()
+
+    if any(hint in lowered for hint in VIEWER_TARGET_HINTS):
+        return {
+            "class": "viewer_target",
+            "reason": "field name explicitly suggests viewer-relative relationship state",
+            "requires_semantic_verification": False,
+        }
+
+    if any(hint in lowered for hint in TARGET_PRIVATE_HINTS):
+        return {
+            "class": "target_private_candidate",
+            "reason": "field name suggests non-public or privacy-sensitive target state",
+            "requires_semantic_verification": True,
+        }
+
+    if any(hint in lowered for hint in PUBLIC_TARGET_HINTS):
+        return {
+            "class": "public_target",
+            "reason": "field name matches commonly public profile metadata",
+            "requires_semantic_verification": False,
+        }
+
+    return {
+        "class": "unknown",
+        "reason": "field semantics are not established from the observed path name",
+        "requires_semantic_verification": True,
+    }
+
+
+def classify_target_response_paths(paths: set[str], axes: set[str]) -> dict[str, Any]:
+    """Summarize field-name classes only for operations with an identity target axis."""
+    if not has_identity_target_axis(axes):
+        return {
+            "applicable": False,
+            "counts": {},
+            "samples": {},
+            "note": "No explicit person/account target axis was observed for this operation.",
+        }
+
+    grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for path in sorted(paths):
+        result = classify_response_path(path)
+        grouped[result["class"]].append(
+            {
+                "path": path,
+                "requires_semantic_verification": result["requires_semantic_verification"],
+            }
+        )
+
+    return {
+        "applicable": True,
+        "counts": {key: len(values) for key, values in sorted(grouped.items())},
+        "samples": {key: values[:40] for key, values in sorted(grouped.items())},
+        "note": (
+            "Lexical triage only. target_private_candidate means worth controlled semantic "
+            "verification; it is not evidence that another user's private value is disclosed."
+        ),
+    }
+
+
 def classify(name: str) -> str:
     lowered = name.lower()
     rules = [
@@ -223,6 +313,9 @@ def build(paths: list[Path]) -> dict[str, Any]:
 
     operations = []
     for group in groups.values():
+        target_field_classes = classify_target_response_paths(
+            group["response_paths"], group["candidate_axes"]
+        )
         operations.append(
             {
                 "friendly_name": group["friendly_name"],
@@ -242,6 +335,7 @@ def build(paths: list[Path]) -> dict[str, Any]:
                 },
                 "response_path_count": len(group["response_paths"]),
                 "response_paths_sample": sorted(group["response_paths"])[:80],
+                "target_response_field_classes": target_field_classes,
                 "statuses": dict(sorted(group["statuses"].items())),
             }
         )
@@ -276,7 +370,8 @@ def build(paths: list[Path]) -> dict[str, Any]:
             "Capability map is observational: candidate_expansion_axes are accepted "
             "variable names observed in captured requests, not proof that arbitrary "
             "values are authorized or meaningful. Selector identifiers preserve "
-            "setting/storage schema names but not user values."
+            "setting/storage schema names but not user values. target_response_field_classes "
+            "is lexical triage only and does not establish disclosure or authorization behavior."
         ),
     }
 
