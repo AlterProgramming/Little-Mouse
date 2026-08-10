@@ -131,6 +131,18 @@ python tools/render_trace_viewer.py trace-ledger.json \
 
 The default ledger is pseudonymous and the viewer is a self-contained offline HTML file. HAR time is treated as **observation time**, not silently promoted to exact action or rename time. See [`docs/workflows/har-trace-ledger-viewer.md`](docs/workflows/har-trace-ledger-viewer.md).
 
+### HAR frontier manifest
+
+Turn captured stable identifiers and media shortcodes into an explicit **centerless expansion frontier** for later web-search/computer-use observation. The manifest records provenance, open frontier objects, and a node budget without inventing nodes to satisfy that budget.
+
+```bash
+python tools/extract_har_frontier_manifest.py capture.har \
+  --target-nodes 10000 \
+  -o frontier.json
+```
+
+Identity-bearing public resolvers are separately gated with `--include-identities --agreement agreement.json`. Future observations must be appended as newly observed evidence rather than rewritten into the original capture. See [`docs/workflows/har-frontier-manifest.md`](docs/workflows/har-frontier-manifest.md).
+
 ## Validation
 
 The repository runs `python -m unittest discover -s tests -v` through `.github/workflows/validate-negative-space.yml` for changes to the registered negative-space workflows.
