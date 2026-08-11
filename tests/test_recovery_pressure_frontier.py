@@ -27,6 +27,8 @@ class RecoveryPressureFrontierTests(unittest.TestCase):
             (2, 2, 1.5, 1.2, 1.0),
             (4, 3, 1.5, 1.5, 1.2),
             (6, 4, 1.8, 1.8, 1.4),
+            # Exactly at modeled capacity: P = 120, so Pr(recovery) = 0.5.
+            (5, 4, 2.0, 1.5, 2.0),
             (8, 5, 2.0, 2.0, 1.5),
             (10, 6, 2.2, 2.5, 1.7),
             (12, 8, 2.5, 3.0, 2.0),
@@ -54,10 +56,10 @@ class RecoveryPressureFrontierTests(unittest.TestCase):
             self.assertTrue(invariant_ok)
             observed.append((ratio, probability))
 
-        # We want the modeled frontier to move from near-certain toward collapse.
+        # We want the modeled frontier to move from near-certain through 50% toward collapse.
         self.assertGreater(observed[0][1], 0.99)
         self.assertLess(observed[-1][1], 0.01)
-        self.assertTrue(any(0.4 <= prob <= 0.6 for _, prob in observed))
+        self.assertTrue(any(abs(prob - 0.5) < 1e-12 for _, prob in observed))
 
     def test_same_invariants_can_pass_while_capacity_model_degrades(self):
         low = modeled_recovery_probability(0.25)
